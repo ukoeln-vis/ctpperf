@@ -92,7 +92,25 @@ inline vector<2, T> get_tex_coord(
     return lerp( tc1, tc2, tc3, hr.u, hr.v );
 }
 
+//-------------------------------------------------------------------------------------------------
+// Sphere
+//
 
+template <typename HR, typename T>
+VSNRAY_FUNC
+inline auto get_tex_coord(HR const& /*hr*/, basic_sphere<T> /* */)
+    -> vector<2, typename HR::scalar_type>
+{
+    return vector<2, typename HR::scalar_type>(0.0);
+}
+
+template <typename Ignore, typename HR, typename T>
+VSNRAY_FUNC
+inline auto get_tex_coord(Ignore, HR const& /*hr*/, basic_sphere<T> /* */)
+    -> vector<2, typename HR::scalar_type>
+{
+    return vector<2, typename HR::scalar_type>(0.0);
+}
 //-------------------------------------------------------------------------------------------------
 // Gather N texture coordinates from array
 //

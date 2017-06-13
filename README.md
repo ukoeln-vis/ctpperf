@@ -1,146 +1,79 @@
-[![Build Status](https://travis-ci.org/szellmann/visionaray.svg?branch=master)](https://travis-ci.org/szellmann/visionaray)
-[![Build Status](https://ci.appveyor.com/api/projects/status/github/szellmann/visionaray?svg=true&branch=master)](https://ci.appveyor.com/project/szellmann/visionaray/branch/master)
-[![Join the chat at https://gitter.im/visionaray/Lobby](https://badges.gitter.im/visionaray/Lobby.svg)](https://gitter.im/visionaray/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+C++ Compile Time Polymorphism for Ray Tracing
+=============================================
 
-Visionaray
-==========
+Source code repository accompanying the scientific paper
 
-A C++ based, cross platform ray tracing library
+S. Zellmann, U. Lang (2017)
 
-> **Note that the current version of Visionaray is an early preview. At this stage, the framework, including the API, are likely to undergo frequent changes.**
+_"C++ Compile Time Polymorphism for Ray Tracing"._
 
-Getting Visionaray
-------------------
+Proceedings of the 22nd International Symposium on Vision, Modeling and Visualization (VMV 2017), Bonn, Germany, September 25, 2017 (accepted for publication).
 
-Under Linux or Mac OS X, use the following commands to locally clone Visionaray
+Description
+-----------
 
-```Shell
-git clone https://github.com/szellmann/visionaray.git
-cd visionaray
-git submodule update --init --recursive
+This repository includes the complete benchmark routine for the paper mentioned above. Note that the benchmark code is not intended to be "production ready" and was only tested in a very limited environment: Ubuntu 16.04, compiling with GCC 5.4.0 or CUDA 8.0 nvcc. Running the benchmarks requires switching git branches and editing some compile time defines in header files!
+
+We created the benchmark suite by first forking [Visionaray][1] at commit [047e641ca5ee2cb35507923f109bcd9fe2a00b2e][2]. For simplicity, we implemented the benchmark itself as a _Visionaray example_ that can be found in
+
+```src/examples/wavefront_pathtracer```
+
+For the paper, we implemented the following benchmark tests using a wavefront pathtracing approach:
+- Shading, compile time polymorphism to determine the correct shading routines (CPU & CUDA).
+  Implemented on branch [shading_benchmarks][3].
+
+- Shading, object oriented polymorphism to determine the correct shading routines (CPU only).
+  Implemented on branch [shading_benchmark_oop][4].
+
+- Shading, one kernel per material type, and sorting (CPU & CUDA).
+  Implemented on branch [shading_benchmarks][3].
+
+- Intersect, compile time polymorphism to support BVHs containing multiple primitive types (CPU & CUDA).
+  Implemented on branch [intersect_benchmarks][5].
+
+- Intersect, object oriented polymorphism to support BVHs containing multiple primitive types (CPU only).
+  Implemented on branch [intersect_benchmark_oop][6].
+
+- Intersect, with one BVH per primitive type (CPU & CUDA).
+  Implemented on branch [intersect_benchmarks][5].
+  
+Tipps for building the benchmark suite
+--------------------------------------
+
+Follow the [general instructions to build Visionaray][7]. Make sure that you **build the examples** (cmake variable ```VSNRAY_ENABLE_EXAMPLES```! Use the cmake variable ```VSNRAY_ENABLE_CUDA``` to switch between CPU and GPU builds. Make sure to configure release builds: ```CMAKE_BUILD_TYPE=Release```.
+
+The tests "CTP vs. sorting" and "CTP vs. kernel per primitive" can be found on branches [shading_benchmarks][3] and [intersect_benchmarks][5]. Activate the respective tests by manipulating the C preprocessor defines [SORT_BY_MATERIAL_TYPE][8] and [INTERSECT_PER_PRIMITIVE_TYPE][9] in ```pathtracer.h``` before compiling on the respective branch.
+
+For the "kernel per primitive" tests, we add randomly distributed spheres to the scenes. Note that we hardcoded specific setups (e.g. sphere size) for the Conference Room and San Miguel test scenes. You may play around with the C preprocessor defines in [main.cpp][10] for the various configurations.
+
+Tipps for running the benchmarks
+--------------------------------
+
+Invoke the ```wavefront_pathtracer``` application with a command line similar to the following one:
+
+```
+src/examples/wavefront_pathtracer/wavefront_pathtracer data/models/model-dir/model-name.obj -camera=camera-file.txt -bvh=split -width=2560 -height=1024
 ```
 
-Build requirements
-------------------
-
-- C++11 compliant compiler
-   (tested with g++-4.8.4 on Ubuntu 14.04 x86_64,
-    tested with clang++-7.0.2 on Mac OS X 10.10,
-    tested with Microsoft Visual Studio 2015 VC14 for x64)
-
-- [CMake][1] version 2.8 or newer
-- [Boost][2]
-- OpenGL
-- [GLEW][3]
-- [NVIDIA CUDA Toolkit][4] version 7.0 or newer (optional)
-
-- All external dependencies but CMake are required as developer packages containing C/C++ header files
-- In the future we intend to relax the OpenGL and GLEW dependency
-- When targeting NVIDIA CUDA, make sure you have a C++11 compliant version (v7.0 or newer)
-- Visionaray supports Fermi+ NVIDIA GPUs (e.g. >= GeForce 400 series or >= Quadro {4|5|6}000)
-
-Additionally, in order to compile the viewer application and the [examples](https://github.com/szellmann/visionaray/tree/master/src/examples), the following packages are needed:
-
-- [GLUT][5] or [FreeGLUT][6]
-- [Libjpeg][7] (optional)
-- [Libpng][8] (optional)
-- [LibTIFF][9] (optional)
-
-
-
-Building the Visionaray library and viewer application
-------------------------------------------------------
-
-### Linux and Mac OS X
-
-It is strongly recommended that you do a "release build" because otherwise the CPU code path will be "sluggish".
-It is also recommended to supply an architecture flag that corresponds to the CPU architecture you are targeting.
-Please ensure that you have C++11 support activated.
-
-```Shell
-cd visionaray
-mkdir build
-cd build
-
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-std=c++11 -msse4.1"
-make
-make install
-```
-
-The headers, libraries and viewer application will then be located in the standard install path of your operating system (usually /usr/local).
-
-See the [Getting Started Guide](https://github.com/szellmann/visionaray/wiki/Getting-started) and the [Troubleshooting section](https://github.com/szellmann/visionaray/wiki/Troubleshooting) in the [Wiki](https://github.com/szellmann/visionaray/wiki) for further information.
-
-
-Visionaray Viewer
------------------
-
-Visionaray comes with a viewer application that can process wavefront obj files containing polygons. The viewer application is primarily meant as a developer tool for debugging and testing.
-After being installed, the viewer application executable can be called using the following command:
-
-```Shell
-vsnray-viewer <filename.obj>
-```
-
-where filename.obj is a wavefront obj file.
-
-Documentation
--------------
-
-Thorough documentation can be found in the [Wiki](https://github.com/szellmann/visionaray/wiki).
-
-
-Source Code Organization
-------------------------
-
-### Library
-
-Visionaray is a template library, so that most algorithms are implemented in headers located under `include/visionaray`.
-
-- `include/visionaray/math`: GLSL-inspired math templates, wrappers for SIMD types, geometric primitives
-- `include/visionaray/texture`: texture management templates and texture access routines
-- `include/visionaray`: misc. ray tracing templates, BVHs, render targets, etc.
-
-Visionaray can optionally interoperate with graphics and GPGPU APIs. Interoperability with the respective libraries is compiled into the Visionaray library. When not needing GPU interoperability, chances are high that you don't need to link with the library but can just include headers.
-
-- `include/visionaray/cuda/`, `src/visionaray/cuda`: CUDA interoperability classes
-- `include/visionaray/gl`, `src/visionaray/gl`: OpenGL(ES) interoperability classes
-
-Headers in `./detail` subfolders are not part of the public API. Code in namespace `detail` contains private implementation. Template class implementations go into files ending with `.inl`, which are included at the bottom of the public interface header file.
-
-### Applications
-
-Visionaray comes with a rudimentary viewer (see above) and a set of [example applications](https://github.com/szellmann/visionaray/tree/master/src/examples). Those are implemented under
-
-- `src/viewer`: visionaray viewer application
-- `src/examples`: visionaray example applications
-
-### Common library
-
-The viewer application and the examples statically link with the Visionaray-common library that provides functionality such as windowing classes or mouse interaction. The Visionaray-common library is **not part of the public API** and interfaces may change between releases.
-
-- `src/common`: library private to the viewer and example applications
-
-### Third-party libraries
-
-- `src/3rdparty`: third-party code goes in here
-
-Visionaray currently uses the following third-party libraries:
-- [CmdLine](https://github.com/abolz/CmdLine) library to handle command line arguments in the viewer and example applications.
-
+The models we used for our tests can be found under ```data/models```, camera files can be found under ```/data/cameras```.
 
 License
 -------
 
-Visionaray is licensed under the MIT License (MIT)
+* Visionaray is licensed under the MIT License (MIT)
+* The benchmark suite uses code from https://gist.github.com/jappa/62f30b6da5adea60bad3 to support C++14 ```integer_sequence``` with CUDA 8.0 (C++11 only).
+* The 3D models were downloaded from Morgan McGuires Meshes repository: http://casual-effects.com/data/index.html
+  - Conference Room is in the Public Domain.
+  - San-Miguel and Crytek Sponza are licensed under the CC BY 3.0 (http://creativecommons.org/licenses/by/3.0/).
+  - See the ```readme.txt``` files under ```data/models``` for modifications we made to the 3D models.
 
-
-[1]:    http://www.cmake.org/download/
-[2]:    http://www.boost.org/users/download/
-[3]:    http://glew.sourceforge.net/
-[4]:    https://developer.nvidia.com/cuda-toolkit
-[5]:    https://www.opengl.org/resources/libraries/glut/
-[6]:    http://freeglut.sourceforge.net/index.php#download
-[7]:    http://libjpeg.sourceforge.net/
-[8]:    http://libpng.sourceforge.net
-[9]:    http://www.libtiff.org
+[1]:    https://github.com/szellmann/visionaray
+[2]:    https://github.com/szellmann/visionaray/commit/047e641ca5ee2cb35507923f109bcd9fe2a00b2e
+[3]:    https://github.com/ukoeln-vis/ctpperf/tree/shading_benchmarks
+[4]:    https://github.com/ukoeln-vis/ctpperf/tree/shading_benchmark_oop
+[5]:    https://github.com/ukoeln-vis/ctpperf/tree/intersect_benchmarks
+[6]:    https://github.com/ukoeln-vis/ctpperf/tree/intersect_benchmark_oop
+[7]:    https://github.com/szellmann/visionaray/wiki/Getting-started
+[8]:    https://github.com/ukoeln-vis/ctpperf/blob/shading_benchmarks/src/examples/wavefront_pathtracer/pathtracer.h#L10
+[9]:    https://github.com/ukoeln-vis/ctpperf/blob/intersect_benchmarks/src/examples/wavefront_pathtracer/pathtracer.h#L11
+[10]:   https://github.com/ukoeln-vis/ctpperf/blob/intersect_benchmarks/src/examples/wavefront_pathtracer/main.cpp#L664
